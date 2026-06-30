@@ -56,7 +56,7 @@ const applyOp = (content, op) => {
  * If the operation was based on an older version, transform it against
  * every operation that has happened since, in order.
  */
-const processOperation = (roomCode, { baseVersion, op, history }) => {
+const processOperation = (roomCode, { baseVersion, op }, history) => {
   const state = getOrCreateRoomState(roomCode);
 
   let transformedOp = { ...op };
@@ -94,7 +94,7 @@ const drainQueue = (roomCode, history) => {
   state.processing = true;
   const { payload, callback } = state.queue.shift();
 
-  const result = processOperation(roomCode, payload);
+  const result = processOperation(roomCode, payload, history);
   history.push({ version: result.newVersion, op: result.appliedOp });
 
   callback(result);

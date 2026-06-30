@@ -44,6 +44,7 @@ const scheduleSave = (roomCode) => {
   saveTimers.set(roomCode, timer);
 };
 
+
 const registerEditorHandlers = (io, socket) => {
   socket.on('join-room', async ({ roomCode }, ack) => {
     try {
@@ -55,10 +56,9 @@ const registerEditorHandlers = (io, socket) => {
       socket.join(roomCode);
       socket.data.roomCode = roomCode;
 
-      let snapshot = await CodeSnapshot.findOne({ room: room._id });
-      if (!snapshot) {
-        snapshot = await CodeSnapshot.create({ room: room._id, content: '', version: 0 });
-      }
+      const snapshot = await CodeSnapshot.findOneAndUpdate({ room: room._id }, { $setOnInsert: { content: '', version: 0 } },
+  { upsert: true, returnDocument: 'after' });
+      
 
       // Hydrate in-memory state from persisted snapshot if not already loaded
       if (!syncService.getRoomState(roomCode)) {
@@ -68,6 +68,7 @@ const registerEditorHandlers = (io, socket) => {
       const state = syncService.getRoomState(roomCode);
       ack?.({ content: state.content, version: state.version });
     } catch (err) {
+        console.error('[DEBUG] join-room error:', err);
       ack?.({ error: 'Failed to join room' });
     }
   });
@@ -75,7 +76,7 @@ const registerEditorHandlers = (io, socket) => {
   socket.on('code-op', ({ roomCode, baseVersion, op }) => {
     const history = getHistory(roomCode);
 
-    syncService.enqueueOperation(roomCode, { baseVersion, op, history }, (result) => {
+    syncService.enqueueOperation(roomCode, { baseVersion, op }, history, (result) => {
       // Broadcast the transformed operation + new version to everyone else in the room
       socket.to(roomCode).emit('code-op-applied', {
         op: result.appliedOp,
@@ -90,6 +91,8 @@ const registerEditorHandlers = (io, socket) => {
       });
 
       scheduleSave(roomCode);
+
+      console.log(`[DEBUG] Room ${roomCode} content is now:`, JSON.stringify(syncService.getRoomState(roomCode).content));
 
       // Prevent unbounded history growth — keep last 500 ops per room
       if (history.length > 500) {
