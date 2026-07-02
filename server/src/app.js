@@ -3,6 +3,8 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const roomRoutes = require('./routes/roomRoutes');
+const commentRoutes = require('./routes/commentRoutes');
+const aiReviewRoutes = require('./routes/aiReviewRoutes');
 
 const app = express();
 
@@ -15,7 +17,9 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
-app.use(errorHandler);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/rooms/:roomCode/comments', commentRoutes);
+app.use('/api/rooms/:roomCode/ai-review', aiReviewRoutes);
+app.use(errorHandler);
 
 module.exports = app;

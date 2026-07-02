@@ -2,6 +2,7 @@ const { Server } = require('socket.io');
 const { verifyToken } = require('../services/tokenService');
 const registerEditorHandlers = require('./editorHandlers');
 const registerPresenceHandlers = require('./presenceHandlers');
+const registerCommentHandlers = require('./commentHandlers');
 
 const initSocket = (httpServer) => {
   const io = new Server(httpServer, {
@@ -26,6 +27,7 @@ const initSocket = (httpServer) => {
   io.on('connection', (socket) => {
     registerEditorHandlers(io, socket);
     registerPresenceHandlers(io, socket);
+    registerCommentHandlers(io, socket);
   });
 
   return io;
